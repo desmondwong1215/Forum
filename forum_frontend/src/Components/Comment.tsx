@@ -1,7 +1,7 @@
 import { useParams } from "react-router-dom";
 import { useState } from "react";
 import Input from "./Input";
-import DeleteItem from "./DeleteItem";
+import DeleteItem from "./DeletePost";
 
 function Comment(props: any) {
 

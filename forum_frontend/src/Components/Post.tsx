@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Comment from "./Comment.tsx";
 import Input from "./Input.tsx";
-import DeleteItem from "./DeleteItem.tsx";
+import DeleteItem from "./DeletePost.tsx";
 import { comment } from "../lib/dataTypes.tsx"
 
 function Post(props: any) {

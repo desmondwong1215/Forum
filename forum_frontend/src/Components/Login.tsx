@@ -1,15 +1,19 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Cookies from "js-cookie";
+import axios from "axios"
 
-function Login(props: any) {
+const API_URL = "http://localhost:9090";
 
-    const [username, setUsername] = useState("");
-    const [password, setPassword] = useState("");
+function Login() {
+
+    const [username, setUsername] = useState<string>("");
     let navigate = useNavigate();
 
-    function LogInBut(): void {
+    async function LogInBut(): Promise<void> {
         if (username === "") return;
-        props.logIn(true, username);
+        await axios.post(`${API_URL}/login`, {"name": username});
+        Cookies.set("username", username, {path: "/"})
         navigate(`../forum/${username}`);   
     }
 
@@ -19,11 +23,6 @@ function Login(props: any) {
             placeholder="Username" 
             value={username}
             onChange={(event: any) => setUsername(event.target.value)}></input>
-        <input 
-            type="password" 
-            placeholder="Password" 
-            value={password}
-            onChange={(event: any) => setPassword(event.target.value)}></input>
         <button onClick={LogInBut}>Login</button>
     </div>
 }

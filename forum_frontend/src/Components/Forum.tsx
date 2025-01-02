@@ -1,227 +1,113 @@
 import { useState, useEffect } from 'react'
-import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import Cookies from 'js-cookie';
 import Post from './Post';
 import Input from './Input';
-import { comment, post, likedItem } from "../lib/dataTypes"
+import { post } from "../lib/dataTypes"
+import axios from "axios";
 
-let forumPosts: post[] = [
-  {
-    id: 0,
-    title: "title1",
-    comments: [
-      {
-        id: 0,
-        content: "content1",
-        like: 1,
-        clicked: false,
-        user: "qwe",
-      },
-      {
-        id: 1,
-        content: "content2",
-        like: 1,
-        clicked: false,
-        user: "qwe",
-      }
-    ],
-    like: 1,
-    clicked: false,
-    user: "des",
-  },
-  {
-    id: 1,
-    title: "title2",
-    comments: [
-      {
-        id: 0,
-        content: "content1",
-        like: 1,
-        clicked: false,
-        user: "des",
-      },
-      {
-        id: 1,
-        content: "content2",
-        like: 1,
-        clicked: false,
-        user: "des",
-      }
-    ],
-    like: 1,
-    clicked: false,
-    user: "qwe",
-  },
-];
+const API_URL = "http://localhost:9090"
 
-let likedItems: likedItem[] = [
-  {
-    type: "post",
-    user: "des",
-    postId: 1,
-    commentId: undefined,
-  },
-  {
-    type: "comment",
-    user: "des",
-    postId: 1,
-    commentId: 0,
-  },
-];
-
-function Forum(props: any) {
+function Forum() {
 
   const [posts, setPosts] = useState<post []>([]);
-  let navigate = useNavigate();
-  let { username } = useParams();
+  const navigate = useNavigate();
+  const { username } = useParams();
 
-  function LogOutBut(): void {
-    props.logOut(false, "");
+  async function LogOutBut(): Promise<void> {
+    Cookies.remove("username")
     navigate("../login");
   }
 
-  function updatePosts(newPosts: post[]): post[] {
-    newPosts.forEach((post: post) => {
-      post.clicked = false;
-      post.comments.forEach((comment: comment) => {
-        comment.clicked = false;
-      });
-    });
-    likedItems.forEach((item) => {
-      if (item.user === username) {
-        if (item.type === "post") {
-          newPosts.forEach((post: post) => {
-            if (post.id === item.postId) {
-              post.clicked = true;
-            }
-          });
-        } else {
-          newPosts.forEach((post: post) => {
-            if (post.id === item.postId) {
-              post.comments.forEach((comment: comment) => {
-                if (comment.id === item.commentId) {
-                  comment.clicked = true;
-                }
-              });
-            }
-          });
-        } 
-      }
-    });
-    return newPosts;
-  }
-
-  function postLikeClicked(postId: number): void{
-    let newLikedItems: likedItem[] = likedItems.filter((item: likedItem) => 
-      item.user !== username || item.postId !== postId);
-    let post: post = posts.filter((post: post) => post.id === postId)[0];
-    if (newLikedItems.length != likedItems.length) {
-      post.clicked = false;
-      post.like -= 1;
-    } else {
-      post.clicked = true;
-      post.like += 1;
-      let newItem: likedItem = {
-        type: "post",
-        user: username,
-        postId: postId,
-        commentId: undefined,
-      };
-      newLikedItems.push(newItem);
+  async function getForumPosts(): Promise<void> {
+    try {
+      var newPosts = (await axios.get(`${API_URL}/forum/${username}`)).data
+      setPosts(newPosts);
+    } catch(e) {
+      return;
     }
-    likedItems = newLikedItems;
-    setPosts([...posts]);
   }
 
-  function commentLikeClicked(postId: number, commentId: number): void {
-    let newLikedItems: likedItem[] = likedItems.filter((item: likedItem) => 
-      item.user !== username || item.postId !== postId || item.commentId !== commentId);4
-    let post: post = posts.filter((post: post) => post.id === postId)[0];
-    if (newLikedItems.length != likedItems.length) {
-      post.comments[commentId].clicked = false;
-      post.comments[commentId].like -= 1;
-    } else {
-      post.comments[commentId].clicked = true;
-      post.comments[commentId].like += 1;
-      let newItem: likedItem = {
-        type: "comment",
-        user: username,
-        postId: postId,
-        commentId: commentId,
-      };
-      newLikedItems.push(newItem);
-    }
-    likedItems = newLikedItems;
-    setPosts([...posts]);
-  }
-
-  function addPost(content: string): void {
-    setPosts((prev: post[]) => {
-      let newPost: post = {
-        id: prev[prev.length - 1].id + 1,
-        title: content,
-        comments: [],
-        like: 0,
-        clicked: false,
-        user: username,
-      };
-      posts.push(newPost);
-      return [...posts];
+  async function edit(id: number, isPost: boolean, newContent: string): Promise<void> {
+    await axios.put(`${API_URL}/forum/${username}`, {
+      "id": id,
+      "type": isPost ? "post" : "comment",
+      "content": newContent
     })
+    getForumPosts();
   }
 
-  function addComment(postId: number, content: string): void {
-    setPosts((prev: post[]) => {
-      let post: post = prev.filter((post: post) => post.id === postId)[0];
-      let comments: comment[] = post.comments;
-      let newComment: comment = {
-        id: comments.length === 0 ? 0 : comments[comments.length - 1].id + 1,
-        content: content,
-        like: 0,
-        clicked: false,
-        user: username,
-      }
-      post.comments = [...comments, newComment];
-      return [...prev];
+  async function likeClicked(postId: number, commentId: number, like: number, clicked: boolean): Promise<void>{
+    await axios.patch(`${API_URL}/forum/${username}/${postId}`, {
+      "id": commentId,
+      "type": commentId === 0 ? "post" : "comment",
+      "content": clicked ? "true" : "false",
+      "like": like + (clicked ? -1 : 1),
     });
+    getForumPosts();
   }
 
-  function wantDelete(postId: number): void {
-    forumPosts = forumPosts.filter((post: post) => post.id !== postId);
-    setPosts(forumPosts);
+  async function addPost(title: string): Promise<void> {
+    await axios.post(`${API_URL}/forum/${username}`, {
+      "type": "post",
+      "title": title
+    })
+    getForumPosts();
+  }
+
+  async function addComment(postId: number, content: string): Promise<void> {
+    await axios.post(`${API_URL}/forum/${username}`, {
+      "type": "comment",
+      "content": content,
+      "postId": postId
+    })
+    getForumPosts();
+  }
+
+  async function deletePost(type: string, id: number): Promise<void> {
+    await axios.delete(`${API_URL}/forum/${username}/${type}/${id}`);
+    getForumPosts();
+  }
+
+  async function deleteComment(type: string, id: number): Promise<void> {
+    await axios.delete(`${API_URL}/forum/${username}/${type}/${id}`);
+    getForumPosts();
   }
 
   useEffect(() => {
-    if (username !== props.username) {
-      navigate(`../forum/${props.username}`);
+    const cookieUsername = Cookies.get("username");
+    if (!cookieUsername) {
+      navigate("../login");
+    } else if (username !== cookieUsername) {
+      navigate(`../forum/${cookieUsername}`);
+    } else {
+      getForumPosts();
     }
-    let updatedPosts = updatePosts(forumPosts);
-    setPosts(updatedPosts);
-  }, []);
+  }, [username]);
 
-  return props.authorised ? 
-    <div>
-        <p>My forum</p>
-        <Input submit={addPost} type={"Post"}/>
-        {
-        posts.map((post: post) => <Post 
-            key={post.id}
-            id={post.id}
-            title={post.title}
-            comments={post.comments}
-            like={post.like}
-            clicked={post.clicked}
-            user={post.user}
-            sameUser={post.user === username}
-            wantDelete={wantDelete}
-            postLikeClicked={postLikeClicked}
-            commentLikeClicked={commentLikeClicked}
-            submit={addComment}
-        />)
-        }
-        <button onClick={LogOutBut}>Log Out</button>
-        {/* <button onClick={() => navigate("./add", {state: {submit: addPost}})}>Add Post</button> */}
-    </div>
-    : <Navigate to="../login" />
+  return <div>
+    <p>My forum</p>
+    <Input submit={addPost} type={"Post"}/>
+    {
+    posts.map((post: post) => <Post 
+        key={post.id}
+        id={post.id}
+        title={post.title}
+        comments={post.comments}
+        like={post.like}
+        clicked={post.clicked}
+        user={post.user}
+        sameUser={post.user === username}
+        deletePost={deletePost}
+        deleteComment={deleteComment}
+        likeClicked={likeClicked}
+        edit={edit}
+        submit={addComment}
+    />)
+    }
+    <button onClick={LogOutBut}>Log Out</button>
+  </div>
+    
     
 }
 

@@ -124,6 +124,7 @@ func (r *Respository) FillInForumComment(c *fiber.Ctx, fc *frontend.Comment, cm 
 	return nil
 }
 
+// get the list of post in the structure needed by the frontend
 func (r *Respository) GetForumPosts(c *fiber.Ctx) error {
 
 	posts := []models.Post{}

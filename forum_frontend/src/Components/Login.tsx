@@ -8,8 +8,9 @@ const API_URL = "http://localhost:9090";
 function Login() {
 
     const [username, setUsername] = useState<string>("");
-    let navigate = useNavigate();
+    const navigate = useNavigate();
 
+    // register the user if the current user is a new user and set the cookies for the current user
     async function LogInBut(): Promise<void> {
         if (username === "") return;
         await axios.post(`${API_URL}/login`, {"name": username});

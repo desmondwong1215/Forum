@@ -1,14 +1,12 @@
-import './App.css';
-
 import { BrowserRouter, Route, Routes} from 'react-router-dom';
 import Forum from './Forum';
 import Login from "./Login";
 import Home from "./Home";
 import ErrorPage from "./ErrorPage";
+import './App.css';
 
 
 function App() {
-
   return<BrowserRouter>
     <Routes>
       <Route path="/" element={<Home />}/>
@@ -17,7 +15,6 @@ function App() {
       <Route path="/*" element={<ErrorPage />}/>
     </Routes>
   </BrowserRouter>
-  
 }
 
 export default App;

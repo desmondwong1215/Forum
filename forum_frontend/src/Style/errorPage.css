@@ -1,0 +1,42 @@
+#anger {
+    width: 500px;
+    height: 500px;
+}
+
+#error-div {
+    padding: 100px 0px 0px 20%;
+}
+
+.shaky-btn { 
+    animation: shake 2s infinite linear; 
+} 
+
+.errorMessage {
+    text-align: center;
+}
+
+@keyframes shake { 
+    0% { 
+        transform: translateX(0px) rotate(0deg); 
+    } 
+
+    5% { 
+        transform: translateX(-4px) rotate(-4deg); 
+    } 
+
+    10% { 
+        transform: translateX(-2px) rotate(-2deg); 
+    } 
+
+    15% { 
+        transform: translateX(4px) rotate(4deg); 
+    } 
+
+    20% { 
+        transform: translateX(2px) rotate(2deg); 
+    } 
+
+    25% { 
+        transform: translateX(0px) rotate(0deg); 
+    } 
+} 

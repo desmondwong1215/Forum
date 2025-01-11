@@ -1,10 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom';
 import Cookies from 'js-cookie';
-import Post from './Post';
-import Input from './Input';
-import { post } from "../lib/dataTypes"
 import axios from "axios";
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import Post from './Post';
+import ForumNavbar from './ForumNavBar';
+import CreatePost from './CreatePost';
+import { post } from "../lib/dataTypes";
+import "../Style/forum.css";
+import { brown } from '@mui/material/colors';
 
 const API_URL = "http://localhost:9090"
 
@@ -12,8 +17,24 @@ function Forum() {
 
   const [posts, setPosts] = useState<post []>([]);
   const [keyWords, setKeyWords] = useState<string>("");
+  const [isLight, setLight] = useState<boolean>(Cookies.get("mode") === "light");
+  const [showCreatePost, setCreatePost] = useState<boolean>(false);
   const navigate = useNavigate();
   const { username } = useParams();
+
+  const webTheme = createTheme({
+    palette: {
+      mode: isLight ? 'light' : 'dark',
+      primary: {
+        main: brown[300],
+      }
+    },
+    typography: {
+      "fontFamily": `"Kanit", serif`,
+      "fontWeightMedium": 400,
+      "fontSize": 15,
+    }
+  });
 
   // get the list of posts, together with their respective comments from the backend system
   async function getForumPosts(): Promise<void> {
@@ -31,16 +52,28 @@ function Forum() {
   }
 
   // remove the user cookies and navigate to the `login` page
-  async function LogOutBut(): Promise<void> {
+  async function logOutBut(): Promise<void> {
     Cookies.remove("username");
+    Cookies.remove("mode");
     navigate("../login");
   }
 
-  // edit the content of the target item
-  async function edit(id: number, isPost: boolean, newContent: string): Promise<void> {
+  // edit the content of the target comment
+  async function editComment(id: number, newContent: string): Promise<void> {
     await axios.put(`${API_URL}/forum/${username}`, {
       "id": id,
-      "type": isPost ? "post" : "comment",
+      "type": "comment",
+      "content": newContent
+    })
+    getForumPosts();
+  }
+
+  // edit the content of the target comment
+  async function editPost(id: number, newTitle: string, newContent: string): Promise<void> {
+    await axios.put(`${API_URL}/forum/${username}`, {
+      "id": id,
+      "type": "post",
+      "title": newTitle,
       "content": newContent
     })
     getForumPosts();
@@ -58,10 +91,11 @@ function Forum() {
   }
 
   // add a new post and send it to the backend system
-  async function addPost(title: string): Promise<void> {
+  async function addPost(title: string, content: string): Promise<void> {
     await axios.post(`${API_URL}/forum/${username}`, {
       "type": "post",
-      "title": title
+      "title": title,
+      "content": content,
     })
     getForumPosts();
   }
@@ -82,6 +116,12 @@ function Forum() {
     getForumPosts();
   }
 
+  // control the light and dark mode of the website
+  function controlMode() {
+    setLight(!isLight);
+    Cookies.set("mode", isLight ? 'dark' : 'light', {path: "/"});
+  }
+
   // block the user if there is no cookies
   // check the username parameter in the url and change it to the cookies.username if they do not match
   // else load the forum for the user
@@ -96,34 +136,61 @@ function Forum() {
     }
   }, [username]);
 
+  // get the post according to the keyword
   useEffect(() => {
+    if (username !== Cookies.get("username")) return;
     getForumPosts();
   }, [keyWords]);
 
-  return <div>
-    <p>My forum</p>
-    <input value={keyWords} placeholder={"Enter Keyword"} onChange={keyWordsOnChange}></input>
-    <Input value={undefined} submit={addPost} type={"Post"} back={() => {}}/>
+  return <ThemeProvider theme={webTheme} >
+      <CssBaseline>
+        <div id="forum-div">
 
-    {/* generate the list of post for the user. */}
-    {
-    posts.map((post: post) => <Post 
-        key={post.id}
-        id={post.id}
-        title={post.title}
-        comments={post.comments}
-        like={post.like}
-        clicked={post.clicked}
-        user={post.user}
-        sameUser={post.user === username}
-        deleteItem={deleteItem}
-        likeClicked={likeClicked}
-        edit={edit}
-        submit={addComment}
-    />)
-    }
-    <button onClick={LogOutBut}>Log Out</button>
-  </div>
+          {/* the navbar of the website */}
+          <ForumNavbar 
+            username={username}
+            keyWords={keyWords}
+            isLight={isLight}
+            keyWordsOnChange={keyWordsOnChange}
+            controlMode={controlMode}
+            logOutBut={logOutBut}
+            setCreatePost={() => setCreatePost(true)}/>
+
+          {/* text field for user to create Post */}
+          <CreatePost submit={addPost}
+            showCreatePost={showCreatePost}
+            cancelCreatePost={() => setCreatePost(false)}/>
+
+          <div className={"forum-body ".concat(showCreatePost ? "blur" : "")}>
+                {/* generate the list of post for the user. */}
+                {
+                posts.map((post: post) =>
+                    <Post 
+                        key={post.id}
+                        id={post.id}
+                        title={post.title}
+                        content={post.content}
+                        year={post.year}
+                        month={post.month}
+                        day={post.day}
+                        comments={post.comments}
+                        like={post.like}
+                        clicked={post.clicked}
+                        user={post.user}
+                        sameUser={post.user === username}
+                        isLight={isLight}
+                        deleteItem={deleteItem}
+                        likeClicked={likeClicked}
+                        editPost={editPost}
+                        editComment={editComment}
+                        submit={addComment}
+                    />)
+                }
+            </div>
+          </div>
+      </CssBaseline>
+    </ThemeProvider>
+    
     
     
 }

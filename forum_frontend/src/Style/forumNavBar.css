@@ -1,0 +1,87 @@
+#active-box {
+    display: flex;
+    flex-direction: row;
+    gap: 5px;
+    align-items: center;
+}
+
+#forum-navbar {
+    background-color: #A6AEBF;
+}
+
+#forum-div {
+    margin: 0px;
+}
+
+#forum-navbar {
+    margin-top: 0px;
+}
+
+#forum-logo {
+    width: 25px;
+    height: 25px;
+}
+
+#searchBox {
+    transition: width 0.5s;
+}
+
+.account-box {
+    width: 200px;
+    display: flex !important;
+    flex-direction: row;
+    gap: 5px;
+    justify-content: center;
+    justify-items: center;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.username {
+    overflow: hidden;
+    margin-bottom: 0px;
+}
+
+.logoBox p {
+    margin: 0px;
+}
+
+.logoBox img {
+    margin: 0px;
+}
+
+.searchNotClicked {
+    width: 250px;
+}
+
+.searchClicked {
+    width: min(100%, 500px);
+}
+
+.slideIn {
+    -webkit-animation-name: slideIn;
+    animation-name: slideIn;
+    animation-duration: 0.4s;
+    animation-fill-mode: both;
+}
+
+.blur {
+    filter: blur(8px);
+}
+
+button.nav-link.active {
+    margin: 5px 0px;
+    width: 110px;
+    text-align: left;
+}
+
+@keyframes slideIn {
+    0% {
+        transform: translateY(0rem);
+        opacity: 0;
+    }
+    100% {
+        transform: translateY(0.5rem);
+        opacity: 1;
+    }
+}

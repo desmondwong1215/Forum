@@ -1,0 +1,10 @@
+.create-post-div {
+    position: fixed;
+    z-index: 10000;
+    margin-left: 25%;
+    margin-top: 200px;
+    display: flex;
+    align-content: center;
+    justify-content: center;
+    width: max(300px, 50%);
+}

@@ -1,6 +1,8 @@
 package models
 
 import (
+	"time"
+
 	"gorm.io/gorm"
 )
 
@@ -10,18 +12,21 @@ type User struct {
 }
 
 type Comment struct {
-	ID      uint   `gorm:"primary key;autoIncrement" json:"id"`
-	Content string `json:"content"`
-	Like    uint   `json:"like"`
-	UserID  uint   `json:"userId"`
-	PostID  uint   `json:"postId"`
+	ID        uint `gorm:"primary key;autoIncrement" json:"id"`
+	CreatedAt time.Time
+	Content   string `json:"content"`
+	Like      uint   `json:"like"`
+	UserID    uint   `json:"userId"`
+	PostID    uint   `json:"postId"`
 }
 
 type Post struct {
-	ID     uint   `gorm:"primary key;autoIncrement" json:"id"`
-	Title  string `json:"title"`
-	Like   uint   `json:"like"`
-	UserID uint   `json:"userId"`
+	ID        uint `gorm:"primary key;autoIncrement" json:"id"`
+	CreatedAt time.Time
+	Title     string `json:"title"`
+	Content   string `json:"content"`
+	Like      uint   `json:"like"`
+	UserID    uint   `json:"userId"`
 }
 
 type LikedItem struct {

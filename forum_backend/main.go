@@ -10,6 +10,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -72,12 +73,23 @@ func isClicked(id uint, item_ids *[]uint) bool {
 	return false
 }
 
+// extract the date from time string
+func extractDate(date string) []string {
+	return strings.Split(strings.Split(date, " ")[0], "-")
+}
+
 // fill in the data required in the post, which is the structure needed by the frontend system
 func (r *Respository) FillInForumPost(c *fiber.Ctx, fp *frontend.Post, p *models.Post,
 	clicked_post_ids *[]uint, clicked_comment_ids *[]uint) error {
 
+	// fill in post's data
+	date := extractDate(p.CreatedAt.String())
+	fp.Year = date[0]
+	fp.Month = date[1]
+	fp.Day = date[2]
 	fp.ID = p.ID
 	fp.Title = p.Title
+	fp.Content = p.Content
 	fp.Like = p.Like
 	fp.Clicked = isClicked(p.ID, clicked_post_ids)
 
@@ -110,10 +122,15 @@ func (r *Respository) FillInForumPost(c *fiber.Ctx, fp *frontend.Post, p *models
 // fill in the data required in the comment, which is the structure needed by the frontend system
 func (r *Respository) FillInForumComment(c *fiber.Ctx, fc *frontend.Comment, cm *models.Comment, clicked_comment_ids *[]uint) error {
 
+	// fill in comment data
 	fc.ID = cm.ID
 	fc.Content = cm.Content
 	fc.Like = cm.Like
 	fc.Clicked = isClicked(cm.ID, clicked_comment_ids)
+	date := extractDate(strings.Split(cm.CreatedAt.String(), " ")[0])
+	fc.Year = date[0]
+	fc.Month = date[1]
+	fc.Day = date[2]
 
 	// get the username of the user that create the comment
 	creator := &models.User{}
@@ -141,7 +158,7 @@ func (r *Respository) GetForumPosts(c *fiber.Ctx) error {
 	}
 
 	// get the user structure of the current user
-	if err := r.DB.Select("id").Where("name = ?", c.Params("username")).First(&curUser).Error; err != nil {
+	if err := r.DB.Select("id").Where("name = ?", strings.Replace(c.Params("username"), "%20", " ", -1)).First(&curUser).Error; err != nil {
 		return c.Status(404).JSON(fiber.Map{"err": "could not get user"})
 	}
 
@@ -169,6 +186,7 @@ func (r *Respository) CreatePost(c *fiber.Ctx, userId uint) error {
 
 	newPost := &backend.Post{}
 	newPost.UserID = userId
+	newPost.CreatedAt = time.Now()
 
 	// parse the data from frontend system to the backend `Post` structure
 	if err := c.BodyParser(newPost); err != nil {
@@ -187,6 +205,7 @@ func (r *Respository) CreateComment(c *fiber.Ctx, userId uint) error {
 
 	newComment := &backend.Comment{}
 	newComment.UserID = userId
+	newComment.CreatedAt = time.Now()
 
 	// parse the data from frontend system to the backend `Comment` structure
 	if err := c.BodyParser(newComment); err != nil {
@@ -205,7 +224,7 @@ func (r *Respository) CreateItem(c *fiber.Ctx) error {
 
 	itemType := &backend.ItemType{}
 	user := &models.User{}
-	username := c.Params("username")
+	username := strings.Replace(c.Params("username"), "%20", " ", -1)
 
 	// parse the data from frontend system to the backend `ItemType` structure
 	if err := c.BodyParser(itemType); err != nil {
@@ -238,7 +257,8 @@ func (r *Respository) PutItem(c *fiber.Ctx) error {
 		post := &models.Post{}
 
 		// update the target post with the new title
-		if err := r.DB.Model(post).Where("id = ?", item.ID).Update("title", item.Content).Error; err != nil {
+		if err := r.DB.Model(post).Where("id = ?", item.ID).
+			Updates(models.Post{Title: item.Title, Content: item.Content}).Error; err != nil {
 			return c.Status(400).JSON(fiber.Map{"err": "cannot update post title"})
 		}
 	} else {
@@ -258,7 +278,7 @@ func (r *Respository) PatchItem(c *fiber.Ctx) error {
 
 	item := &backend.ItemType{}
 	user := &models.User{}
-	username := c.Params("username")
+	username := strings.Replace(c.Params("username"), "%20", " ", -1)
 	postId, _ := strconv.Atoi(c.Params("id"))
 
 	// parse the data from frontend to the `ItemType` backend structure
@@ -291,7 +311,8 @@ func (r *Respository) PatchItem(c *fiber.Ctx) error {
 		} else {
 			id = item.ID
 		}
-		if err := r.DB.Where(fmt.Sprintf("%s_id = ? AND user_id = ?", item.Type), id, user.ID).Delete(&models.LikedItem{}).Error; err != nil {
+		if err := r.DB.Where(fmt.Sprintf("%s_id = ? AND user_id = ? AND is_post = ?", item.Type), id, user.ID, item.Type == "post").
+			Delete(&models.LikedItem{}).Error; err != nil {
 			return c.Status(404).JSON(fiber.Map{"err": "cannot delete liked item"})
 		}
 	} else {

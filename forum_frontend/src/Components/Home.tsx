@@ -44,8 +44,7 @@ function Home() {
                             to foster open discussions and idea sharing among people from diverse backgrounds. 
                             It's a digital space where users can post topics of interest, engage in lively 
                             conversations, and connect with others who share similar interests or viewpoints.
-                        </p>
-                        <p>
+                            <br/> <br/>
                             Whether you're looking to discuss trending topics, share personal experiences, 
                             or seek advice, Chatterbox provides a welcoming platform for vibrant and 
                             meaningful conversations.

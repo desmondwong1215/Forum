@@ -40,3 +40,10 @@
         transform: translateX(0px) rotate(0deg); 
     } 
 } 
+
+@media screen and (max-width: 720px) {
+    #anger {
+        width: 200px;
+        height: 200px;
+    }
+}

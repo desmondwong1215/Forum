@@ -19,7 +19,6 @@ function Forum() {
   const [showCreatePost, setCreatePost] = useState<boolean>(false);
   const navigate = useNavigate();
   const { username } = useParams();
-  let tokenUsername: string;
 
   const webTheme = createTheme({
     palette: {
@@ -38,6 +37,7 @@ function Forum() {
   // get the list of posts, together with their respective comments from the backend system
   async function getForumPosts(): Promise<void> {
     try {
+      console.log(keyWords);
       var newPosts = (await ForumAxios.get(`/forum/${username}/${keyWords}`)).data
       setPosts(newPosts);
     } catch(e) {
@@ -126,13 +126,18 @@ function Forum() {
     Cookies.set("mode", isLight ? 'dark' : 'light', {path: "/"});
   }
 
+  // decrypt the username from the token in local storage
+  function getUsername(): string {
+    const token = localStorage.getItem("access_token");
+    const tokenPayload = JSON.parse(atob(token!.split(".")[1]!));
+    return tokenPayload["user"];
+  }
+
   // block the user if there is no cookies
   // check the username parameter in the url and change it to the cookies.username if they do not match
   // else load the forum for the user
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    const tokenPayload = JSON.parse(atob(token!.split(".")[1]!));
-    tokenUsername = tokenPayload["user"];
+    const tokenUsername = getUsername();
     if (!tokenUsername) {
       navigate("../login");
     } else if (username !== tokenUsername) {
@@ -144,6 +149,7 @@ function Forum() {
 
   // get the post according to the keyword
   useEffect(() => {
+    const tokenUsername = getUsername();
     if (username !== tokenUsername) return;
     getForumPosts();
   }, [keyWords]);

@@ -52,6 +52,12 @@ function Comment(props: CommentProps) {
         setComment(props.content);
         setCommentError(false);
     }
+
+    // close the delete section if opened and open the edit session
+    function handleEditClick() {
+        setShowEdit(true);
+        setShowDelete(false);
+    }
     
     return <Zoom in={true} mountOnEnter>
         <Box className="comment-box">
@@ -148,7 +154,7 @@ function Comment(props: CommentProps) {
                         {sameUser && <IconButton 
                             title="edit"
                             className="comment-icon-box icon-shake"
-                            onClick={() => setShowEdit(true)}>
+                            onClick={handleEditClick}>
                             <EditIcon fontSize="small"/>
                         </IconButton>}
 

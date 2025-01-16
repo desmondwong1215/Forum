@@ -1,17 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom';
 import Cookies from 'js-cookie';
-import axios from "axios";
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Post from './Post';
 import ForumNavbar from './ForumNavBar';
 import CreatePost from './CreatePost';
+import ForumAxios from '../forumAxios';
 import { post } from "../lib/dataTypes";
 import "../Style/forum.css";
 import { brown } from '@mui/material/colors';
-
-const API_URL = "http://localhost:9090"
 
 function Forum() {
 
@@ -21,6 +19,7 @@ function Forum() {
   const [showCreatePost, setCreatePost] = useState<boolean>(false);
   const navigate = useNavigate();
   const { username } = useParams();
+  let tokenUsername: string;
 
   const webTheme = createTheme({
     palette: {
@@ -39,7 +38,7 @@ function Forum() {
   // get the list of posts, together with their respective comments from the backend system
   async function getForumPosts(): Promise<void> {
     try {
-      var newPosts = (await axios.get(`${API_URL}/forum/${username}/${keyWords}`)).data
+      var newPosts = (await ForumAxios.get(`/forum/${username}/${keyWords}`)).data
       setPosts(newPosts);
     } catch(e) {
       return;
@@ -53,14 +52,19 @@ function Forum() {
 
   // remove the user cookies and navigate to the `login` page
   async function logOutBut(): Promise<void> {
-    Cookies.remove("username");
+
+    // remove jwt
+    await ForumAxios.post(`/logout`, {}, {withCredentials: true})
+
+    // remove the access_token stored in local storage
+    localStorage.removeItem("access_token");
     Cookies.remove("mode");
     navigate("../login");
   }
 
   // edit the content of the target comment
   async function editComment(id: number, newContent: string): Promise<void> {
-    await axios.put(`${API_URL}/forum/${username}`, {
+    await ForumAxios.put(`/forum/${username}`, {
       "id": id,
       "type": "comment",
       "content": newContent
@@ -70,7 +74,7 @@ function Forum() {
 
   // edit the content of the target comment
   async function editPost(id: number, newTitle: string, newContent: string): Promise<void> {
-    await axios.put(`${API_URL}/forum/${username}`, {
+    await ForumAxios.put(`/forum/${username}`, {
       "id": id,
       "type": "post",
       "title": newTitle,
@@ -81,7 +85,7 @@ function Forum() {
 
   // update the like of the target item, commentId will be 0 if and only if the item is a post
   async function likeClicked(postId: number, commentId: number, like: number, clicked: boolean): Promise<void>{
-    await axios.patch(`${API_URL}/forum/${username}/${postId}`, {
+    await ForumAxios.patch(`/forum/${username}/${postId}`, {
       "id": commentId,
       "type": commentId === 0 ? "post" : "comment",
       "content": clicked ? "true" : "false",
@@ -92,7 +96,7 @@ function Forum() {
 
   // add a new post and send it to the backend system
   async function addPost(title: string, content: string): Promise<void> {
-    await axios.post(`${API_URL}/forum/${username}`, {
+    await ForumAxios.post(`/forum/${username}`, {
       "type": "post",
       "title": title,
       "content": content,
@@ -102,7 +106,7 @@ function Forum() {
 
   // add a new comment to the post and send it to the backend system
   async function addComment(postId: number, content: string): Promise<void> {
-    await axios.post(`${API_URL}/forum/${username}`, {
+    await ForumAxios.post(`/forum/${username}`, {
       "type": "comment",
       "content": content,
       "postId": postId
@@ -112,7 +116,7 @@ function Forum() {
 
   // delete the target item and everything related to it
   async function deleteItem(type: string, id: number): Promise<void> {
-    await axios.delete(`${API_URL}/forum/${username}/${type}/${id}`);
+    await ForumAxios.delete(`/forum/${username}/${type}/${id}`);
     getForumPosts();
   }
 
@@ -126,11 +130,13 @@ function Forum() {
   // check the username parameter in the url and change it to the cookies.username if they do not match
   // else load the forum for the user
   useEffect(() => {
-    const cookieUsername = Cookies.get("username");
-    if (!cookieUsername) {
+    const token = localStorage.getItem("access_token");
+    const tokenPayload = JSON.parse(atob(token!.split(".")[1]!));
+    tokenUsername = tokenPayload["user"];
+    if (!tokenUsername) {
       navigate("../login");
-    } else if (username !== cookieUsername) {
-      navigate(`../forum/${cookieUsername}`);
+    } else if (username !== tokenUsername) {
+      navigate(`../forum/${tokenUsername}`);
     } else {
       getForumPosts();
     }
@@ -138,7 +144,7 @@ function Forum() {
 
   // get the post according to the keyword
   useEffect(() => {
-    if (username !== Cookies.get("username")) return;
+    if (username !== tokenUsername) return;
     getForumPosts();
   }, [keyWords]);
 
@@ -190,9 +196,6 @@ function Forum() {
           </div>
       </CssBaseline>
     </ThemeProvider>
-    
-    
-    
 }
 
 export default Forum;

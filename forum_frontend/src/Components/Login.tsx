@@ -1,7 +1,5 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Cookies from "js-cookie";
-import axios from "axios"
 import Box from '@mui/material/Box';
 import Slide from "@mui/material/Slide";
 import Zoom from "@mui/material/Zoom"
@@ -9,11 +7,10 @@ import InputAdornment from '@mui/material/InputAdornment';
 import TextField from '@mui/material/TextField';
 import Button from "@mui/material/Button";
 import AccountCircle from '@mui/icons-material/AccountCircle';
+import ForumAxios from "../forumAxios";
 import LoginIcon from '@mui/icons-material/Login';
 import logo from "../image/forum_icon.png";
 import "../Style/login.css";
-
-const API_URL = "http://localhost:9090";
 
 function Login() {
 
@@ -30,8 +27,14 @@ function Login() {
             setError(true);
             return;
         };
-        await axios.post(`${API_URL}/login`, {"name": username});
-        Cookies.set("username", username, {path: "/"})
+        const response = await ForumAxios.post(`/login`, {"name": username}, {withCredentials: true});
+        const { access_token } = response.data
+
+        // store access_token at the local storage
+        localStorage.setItem("access_token", access_token);
+
+        // set authorization header for future requests
+        ForumAxios.defaults.headers.common["Authorization"] = `Bearer ${access_token}`;
         navigate(`../forum/${username}`);   
     }
 

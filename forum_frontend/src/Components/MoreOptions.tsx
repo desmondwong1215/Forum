@@ -24,6 +24,7 @@ function MoreOptions(props: MoreOptionsProps) {
   // when edit button is clicked, popper should be closed and enter edit mode
   function handleEditClick(): void {
     props.setShowEdit(true);
+    setShowDelete(false);
     setAnchorEl(null);
     setOpen(false);
   }

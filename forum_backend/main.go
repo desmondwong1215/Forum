@@ -6,6 +6,7 @@ import (
 	"forum_backend/frontend"
 	"forum_backend/models"
 	"forum_backend/storage"
+	"forum_backend/token"
 	"log"
 	"os"
 	"strconv"
@@ -14,16 +15,31 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/joho/godotenv"
 	"gorm.io/gorm"
 )
 
+// database
 type Respository struct {
 	DB *gorm.DB
 }
 
+// key for the token
+var key string
+
+// create new user
+func (r *Respository) CreateUser(c *fiber.Ctx, user *backend.User) error {
+	newUser := &backend.User{}
+	newUser.Name = user.Name
+	if err := r.DB.Create(newUser).Error; err != nil {
+		return c.Status(404).JSON(fiber.Map{"err": "could not create new user"})
+	}
+	return nil
+}
+
 // create new user if user does not exist
-func (r *Respository) CreateUser(c *fiber.Ctx) error {
+func (r *Respository) HandleLogin(c *fiber.Ctx) error {
 
 	var count int64
 	user := &backend.User{}
@@ -35,18 +51,110 @@ func (r *Respository) CreateUser(c *fiber.Ctx) error {
 
 	// get the count of user
 	if err := r.DB.Model(&models.User{}).Where("name = ?", user.Name).Count(&count).Error; err != nil {
-		c.Status(404).JSON(fiber.Map{"err": "could not get the count of user"})
+		return c.Status(404).JSON(fiber.Map{"err": "could not get the count of user"})
 	}
 
 	// the count will be zero if the user does not exist in the database, thus we need to create new user
 	if count == 0 {
-		newUser := &backend.User{}
-		newUser.Name = user.Name
-		if err := r.DB.Create(newUser).Error; err != nil {
-			c.Status(404).JSON(fiber.Map{"err": "could not create new user"})
+		if err := r.CreateUser(c, user); err != nil {
+			return err
 		}
 	}
-	return c.Status(200).JSON(user)
+
+	// generate access token and refresh token
+	accessToken, err := token.GenerateAccessToken(user.Name, key)
+	if err != nil {
+		return c.Status(401).JSON(fiber.Map{"err": "Failed to generate access token"})
+	}
+	refreshToken, err := token.GenerateRefreshToken(user.Name, key)
+	if err != nil {
+		return c.Status(401).JSON(fiber.Map{"err": "Failed to generate refresh token"})
+	}
+
+	// set refresh token as a HTTP-only cookie
+	c.Cookie(&fiber.Cookie{
+		Name:     "refresh_token",
+		Value:    refreshToken,
+		HTTPOnly: true,
+		Secure:   true,
+		SameSite: "Strict",
+		Expires:  time.Now().Add(30 * 24 * time.Hour), // expires in 30 days
+	})
+
+	return c.Status(200).JSON(fiber.Map{
+		"state":        "login",
+		"user":         user,
+		"access_token": accessToken,
+	})
+}
+
+func (r *Respository) ProtectedHandle(c *fiber.Ctx) error {
+
+	// check if the user if authorized
+	authHeader := c.Get("Authorization")
+	if authHeader == "" {
+		return fiber.NewError(fiber.StatusUnauthorized, "Unathorised user")
+	}
+
+	// verify the access token
+	tokenString := authHeader[len("Bearer "):]
+	userToken, err := token.VerifyToken(tokenString, key)
+	if err != nil || !userToken.Valid {
+
+		// the token is invalid
+		return fiber.NewError(fiber.StatusUnauthorized, "Unathorised user")
+	}
+
+	// success
+	return nil
+}
+
+func (r *Respository) RefreshTokenHandle(c *fiber.Ctx) error {
+	refreshToken := c.Cookies("refresh_token")
+
+	// check if the refresh cookies still exists
+	if refreshToken == "" {
+		return fiber.NewError(fiber.StatusUnauthorized, "Token expires")
+	}
+
+	// verify the refresh token
+	userToken, err := token.VerifyToken(refreshToken, key)
+	if err != nil || !userToken.Valid {
+		return fiber.NewError(fiber.StatusUnauthorized, "Invalid token")
+	}
+
+	// get the user
+	claims := userToken.Claims.(jwt.MapClaims)
+	user := claims["user"].(string)
+
+	// generate new access token
+	newAccessToken, err := token.GenerateAccessToken(user, key)
+	if err != nil {
+		return err
+	}
+
+	return c.Status(200).JSON(fiber.Map{
+		"state":        "refresh",
+		"access_token": newAccessToken,
+		"user": &backend.User{
+			Name: user,
+		},
+	})
+}
+
+// logout a user and delete the refresh token in cookies
+func (r *Respository) HandleLogout(c *fiber.Ctx) error {
+
+	// remove the cookies
+	c.Cookie(&fiber.Cookie{
+		Name:     "refresh_token",
+		Value:    "",
+		HTTPOnly: true,
+		Secure:   true,
+		SameSite: "Strict",
+		Expires:  time.Now().Add(-1 * time.Hour),
+	})
+	return c.JSON(fiber.Map{"msg": "Log Out"})
 }
 
 // get the the list of item_id that are liked by the current user
@@ -144,6 +252,11 @@ func (r *Respository) FillInForumComment(c *fiber.Ctx, fc *frontend.Comment, cm 
 // get the list of post in the structure needed by the frontend
 func (r *Respository) GetForumPosts(c *fiber.Ctx) error {
 
+	// check if the user if authorised
+	if err := r.ProtectedHandle(c); err != nil {
+		return c.Status(401).JSON(fiber.Map{"err": "Unauthorised User"})
+	}
+
 	posts := []models.Post{}
 	forumPosts := []frontend.Post{}
 	curUser := models.User{}
@@ -222,6 +335,11 @@ func (r *Respository) CreateComment(c *fiber.Ctx, userId uint) error {
 // create a new post or comment
 func (r *Respository) CreateItem(c *fiber.Ctx) error {
 
+	// check if the user if authorised
+	if err := r.ProtectedHandle(c); err != nil {
+		return c.Status(401).JSON(fiber.Map{"err": "Unauthorised User"})
+	}
+
 	itemType := &backend.ItemType{}
 	user := &models.User{}
 	username := strings.Replace(c.Params("username"), "%20", " ", -1)
@@ -245,6 +363,11 @@ func (r *Respository) CreateItem(c *fiber.Ctx) error {
 
 // make changes to the content of the post or comment (only can be done by the creator of the item)
 func (r *Respository) PutItem(c *fiber.Ctx) error {
+
+	// check if the user if authorised
+	if err := r.ProtectedHandle(c); err != nil {
+		return c.Status(401).JSON(fiber.Map{"err": "Unauthorised User"})
+	}
 
 	item := &backend.ItemType{}
 
@@ -275,6 +398,11 @@ func (r *Respository) PutItem(c *fiber.Ctx) error {
 // keep track of the item (post or comment) that are liked by users
 // it will toggle between `liked` and `not liked` every time the like button was clicked
 func (r *Respository) PatchItem(c *fiber.Ctx) error {
+
+	// check if the user if authorised
+	if err := r.ProtectedHandle(c); err != nil {
+		return c.Status(401).JSON(fiber.Map{"err": "Unauthorised User"})
+	}
 
 	item := &backend.ItemType{}
 	user := &models.User{}
@@ -331,6 +459,11 @@ func (r *Respository) PatchItem(c *fiber.Ctx) error {
 // delete the selected post or comment (only can be done by the creator of the item)
 func (r *Respository) DeleteItem(c *fiber.Ctx) error {
 
+	// check if the user if authorised
+	if err := r.ProtectedHandle(c); err != nil {
+		return c.Status(401).JSON(fiber.Map{"err": "Unauthorised User"})
+	}
+
 	post := &models.Post{}
 	comment := &models.Comment{}
 	likedItem := &models.LikedItem{}
@@ -369,7 +502,10 @@ func (r *Respository) DeleteItem(c *fiber.Ctx) error {
 
 // set up the route of the app
 func (r *Respository) SetupRoutes(app *fiber.App) {
-	app.Post("/login", r.CreateUser)
+	app.Post("/login", r.HandleLogin)
+	app.Post("/logout", r.HandleLogout)
+	app.Post("/refresh", r.RefreshTokenHandle)
+	app.Get("forum/:username/protected", r.ProtectedHandle)
 	app.Get("/forum/:username", r.GetForumPosts)
 	app.Get("/forum/:username/:keywords", r.GetForumPosts)
 	app.Post("/forum/:username", r.CreateItem)
@@ -384,6 +520,9 @@ func main() {
 	if err := godotenv.Load(".env"); err != nil {
 		log.Fatal("Cannot load env")
 	}
+
+	// assign value to the token key
+	key = os.Getenv("KEY")
 
 	// connect database
 	config := &storage.Config{
@@ -413,8 +552,9 @@ func main() {
 
 	// connect to the frontend system
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: "http://localhost:5173",
-		AllowHeaders: "Origin,Content-Type,Accept",
+		AllowOrigins:     "http://localhost:5173",
+		AllowHeaders:     "Origin,Content-Type,Accept,Authorization",
+		AllowCredentials: true,
 	}))
 	r.SetupRoutes(app)
 

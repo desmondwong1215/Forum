@@ -84,6 +84,7 @@ export type AccountBoxProps = {
     isLight: boolean,
     controlMode: () => void,
     setCreatePost: () => void,
+    setFeedback: () => void,
     logOutBut: () => void
 }
 
@@ -93,6 +94,7 @@ export type ForumNavBarProps = {
     isLight: boolean,
     controlMode: () => void,
     setCreatePost: () => void,
+    setFeedback: () => void,
     logOutBut: () => void,
     keyWordsOnChange: (event: React.FormEvent<EventTarget>) => void
 }
@@ -103,4 +105,10 @@ export type MoreOptionsProps = {
     isLight: boolean,
     setShowEdit: (state: boolean) => void,
     delete: () => void,
+}
+
+export type FeedbackProps = {
+    submit: (feedback: string) => void,
+    showFeedback: boolean,
+    cancelFeedback: () => void,
 }

@@ -10,6 +10,7 @@ import ForumAxios from '../forumAxios';
 import { post } from "../lib/dataTypes";
 import "../Style/forum.css";
 import { brown } from '@mui/material/colors';
+import Feedback from './FeedBack';
 
 function Forum() {
 
@@ -17,6 +18,7 @@ function Forum() {
   const [keyWords, setKeyWords] = useState<string>("");
   const [isLight, setLight] = useState<boolean>(Cookies.get("mode") === "light");
   const [showCreatePost, setCreatePost] = useState<boolean>(false);
+  const [showFeedback, setFeedback] = useState<boolean>(false);
   const navigate = useNavigate();
   const { username } = useParams();
 
@@ -37,7 +39,6 @@ function Forum() {
   // get the list of posts, together with their respective comments from the backend system
   async function getForumPosts(): Promise<void> {
     try {
-      console.log(keyWords);
       var newPosts = (await ForumAxios.get(`/forum/${username}/${keyWords}`)).data
       setPosts(newPosts);
     } catch(e) {
@@ -68,7 +69,7 @@ function Forum() {
       "id": id,
       "type": "comment",
       "content": newContent
-    })
+    });
     getForumPosts();
   }
 
@@ -79,7 +80,7 @@ function Forum() {
       "type": "post",
       "title": newTitle,
       "content": newContent
-    })
+    });
     getForumPosts();
   }
 
@@ -100,7 +101,7 @@ function Forum() {
       "type": "post",
       "title": title,
       "content": content,
-    })
+    });
     getForumPosts();
   }
 
@@ -110,8 +111,15 @@ function Forum() {
       "type": "comment",
       "content": content,
       "postId": postId
-    })
+    });
     getForumPosts();
+  }
+
+  // submit the user feedback
+  async function addfeedback(feedback: string): Promise<void> {
+    await ForumAxios.post(`/forum/${username}/feedback`, {
+      "content": feedback,
+    });
   }
 
   // delete the target item and everything related to it
@@ -155,53 +163,60 @@ function Forum() {
   }, [keyWords]);
 
   return <ThemeProvider theme={webTheme} >
-      <CssBaseline>
-        <div id="forum-div">
+    <CssBaseline>
+      <div id="forum-div">
 
-          {/* the navbar of the website */}
-          <ForumNavbar 
-            username={username}
-            keyWords={keyWords}
-            isLight={isLight}
-            keyWordsOnChange={keyWordsOnChange}
-            controlMode={controlMode}
-            logOutBut={logOutBut}
-            setCreatePost={() => setCreatePost(true)}/>
+        {/* the navbar of the website */}
+        <ForumNavbar 
+          username={username}
+          keyWords={keyWords}
+          isLight={isLight}
+          keyWordsOnChange={keyWordsOnChange}
+          controlMode={controlMode}
+          logOutBut={logOutBut}
+          setCreatePost={() => setCreatePost(true)}
+          setFeedback={() => setFeedback(true)}/>
 
-          {/* text field for user to create Post */}
-          <CreatePost submit={addPost}
-            showCreatePost={showCreatePost}
-            cancelCreatePost={() => setCreatePost(false)}/>
+        {/* text field for user to create Post */}
+        <CreatePost submit={addPost}
+          showCreatePost={showCreatePost}
+          cancelCreatePost={() => setCreatePost(false)}/>
 
-          <div className={"forum-body ".concat(showCreatePost ? "blur" : "")}>
-                {/* generate the list of post for the user. */}
-                {
-                posts.map((post: post) =>
-                    <Post 
-                        key={post.id}
-                        id={post.id}
-                        title={post.title}
-                        content={post.content}
-                        year={post.year}
-                        month={post.month}
-                        day={post.day}
-                        comments={post.comments}
-                        like={post.like}
-                        clicked={post.clicked}
-                        user={post.user}
-                        sameUser={post.user === username}
-                        isLight={isLight}
-                        deleteItem={deleteItem}
-                        likeClicked={likeClicked}
-                        editPost={editPost}
-                        editComment={editComment}
-                        submit={addComment}
-                    />)
-                }
-            </div>
+        {/* text field for user to send feedback */}
+        <Feedback 
+          submit={addfeedback}
+          showFeedback={showFeedback}
+          cancelFeedback={() => setFeedback(false)}/>
+
+        <div className={"forum-body ".concat(showCreatePost || showFeedback ? "blur" : "")}>
+              {/* generate the list of post for the user. */}
+              {
+              posts.map((post: post) =>
+                  <Post 
+                      key={post.id}
+                      id={post.id}
+                      title={post.title}
+                      content={post.content}
+                      year={post.year}
+                      month={post.month}
+                      day={post.day}
+                      comments={post.comments}
+                      like={post.like}
+                      clicked={post.clicked}
+                      user={post.user}
+                      sameUser={post.user === username}
+                      isLight={isLight}
+                      deleteItem={deleteItem}
+                      likeClicked={likeClicked}
+                      editPost={editPost}
+                      editComment={editComment}
+                      submit={addComment}
+                  />)
+              }
           </div>
-      </CssBaseline>
-    </ThemeProvider>
+        </div>
+    </CssBaseline>
+  </ThemeProvider>
 }
 
 export default Forum;

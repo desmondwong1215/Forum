@@ -37,7 +37,14 @@ type LikedItem struct {
 	CommentID uint `json:"commentId"`
 }
 
+type Feedback struct {
+	ID       uint   `gorm:"primary key;autoIncrement" json:"id"`
+	UserID   uint   `json:"userId"`
+	Feedback string `json:"feedback"`
+}
+
+// create the tables
 func MigrateItems(db *gorm.DB) error {
-	err := db.AutoMigrate(&User{}, &Post{}, &Comment{}, &LikedItem{})
+	err := db.AutoMigrate(&User{}, &Post{}, &Comment{}, &LikedItem{}, &Feedback{})
 	return err
 }

@@ -361,6 +361,39 @@ func (r *Respository) CreateItem(c *fiber.Ctx) error {
 	return r.CreateComment(c, user.ID)
 }
 
+// create a new feedback
+func (r *Respository) CreateFeedback(c *fiber.Ctx) error {
+
+	// check if the user if authorised
+	if err := r.ProtectedHandle(c); err != nil {
+		return c.Status(401).JSON(fiber.Map{"err": "Unauthorised User"})
+	}
+
+	itemType := &backend.ItemType{}
+	user := &models.User{}
+	newFeedback := &backend.Feedback{}
+	username := strings.Replace(c.Params("username"), "%20", " ", -1)
+
+	// parse the data from frontend system to the backend `ItemType` structure
+	if err := c.BodyParser(itemType); err != nil {
+		return err
+	}
+
+	// get the user using the username from the database
+	if err := r.DB.Where("name = ?", username).First(user).Error; err != nil {
+		return c.Status(404).JSON(fiber.Map{"err": "could not find user"})
+	}
+
+	// add the new feedback to the database
+	newFeedback.UserID = user.ID
+	newFeedback.Feedback = itemType.Content
+	if err := r.DB.Create(newFeedback).Error; err != nil {
+		return c.Status(400).JSON(fiber.Map{"err": "could not create new feedback"})
+	}
+
+	return c.Status(200).JSON(newFeedback)
+}
+
 // make changes to the content of the post or comment (only can be done by the creator of the item)
 func (r *Respository) PutItem(c *fiber.Ctx) error {
 
@@ -509,6 +542,7 @@ func (r *Respository) SetupRoutes(app *fiber.App) {
 	app.Get("/forum/:username", r.GetForumPosts)
 	app.Get("/forum/:username/:keywords", r.GetForumPosts)
 	app.Post("/forum/:username", r.CreateItem)
+	app.Post("/forum/:username/feedback", r.CreateFeedback)
 	app.Put("/forum/:username", r.PutItem)
 	app.Patch("/forum/:username/:id", r.PatchItem)
 	app.Delete("/forum/:username/:type/:id", r.DeleteItem)

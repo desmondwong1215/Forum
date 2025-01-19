@@ -36,3 +36,8 @@ type ItemType struct {
 	Content string `json:"content"`
 	Like    uint   `json:"like"`
 }
+
+type Feedback struct {
+	UserID   uint   `json:"userId"`
+	Feedback string `json:"feedback"`
+}

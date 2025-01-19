@@ -26,6 +26,7 @@ function ErrorPage() {
             </Button>
         </Stack>
         <img id="anger" src={anger}></img>
+        
     </Stack>
 }
 

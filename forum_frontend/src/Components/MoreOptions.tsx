@@ -49,28 +49,30 @@ function MoreOptions(props: MoreOptionsProps) {
                     width: "200px",
                     boxShadow: "3px 3px 10px black"}} 
                   className={props.isLight ? "light-mode-popper" : "dark-mode-popper"}>
-                <Stack sx={{padding: "10px"}} direction='column' spacing={2}>
+                  <Stack sx={{padding: "10px"}} direction='column' spacing={2}>
 
-                    {/* One can only report the post that is not created by themselves */}
-                    {props.sameUser 
-                        ? <Button disabled>By You</Button>
-                        : <Button>Report</Button>}
+                      {/* One can only report the post that is not created by themselves */}
+                      {props.sameUser 
+                          ? <Button disabled>By You</Button>
+                          : <Button>Report</Button>}
 
-                    {/* One can only create one's own post */}
-                    {props.sameUser && <Button onClick={handleEditClick}>Edit</Button>}
+                      {/* One can only create one's own post */}
+                      {props.sameUser && <Button onClick={handleEditClick}>Edit</Button>}
 
-                    {/* delete button, confirmation and cancellation of deletion */}
-                    {props.sameUser && (showDelete 
-                        ? <Stack direction="row" spacing={2} sx={{justifyContent: "center"}}>
-                            <Button onClick={props.delete}>Confirm</Button>
-                            <Button onClick={() => setShowDelete(false)}>Back</Button>
-                        </Stack>
-                        : <Button onClick={() => setShowDelete(true)}>Delete</Button>)}
-                </Stack>
+                      {/* delete button, confirmation and cancellation of deletion */}
+                      {props.sameUser && (showDelete 
+                          ? <Stack direction="row" spacing={2} sx={{justifyContent: "center"}}>
+                              <Button onClick={props.delete}>Confirm</Button>
+                              <Button onClick={() => setShowDelete(false)}>Back</Button>
+                          </Stack>
+                          : <Button onClick={() => setShowDelete(true)}>Delete</Button>)}
+                          
+                  </Stack>
                 </Box>
             </Fade>
             )}
         </Popper>
+
     </div>
   );
 }

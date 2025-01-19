@@ -65,6 +65,7 @@ function Comment(props: CommentProps) {
                 <Avatar {...stringAvatar(props.user!)}
                     style={{width: "24px", height: "24px", fontSize: "10px"}}
                     title={sameUser ? "You" : props.user}/>
+
                 {/* show the content in the text box to allow amendment if edit button is clicked
                 else show the content only */}
                 {
@@ -84,8 +85,8 @@ function Comment(props: CommentProps) {
                         <Button onClick={editComment}>Send</Button>
                         <Button onClick={handleBackBtn}>Back</Button>
                     </Stack>
-                    : <p className="comment">{props.content}</p>
-                }
+                    : <p className="comment">{props.content}</p>}
+
             </Stack>
 
             <CardActions style={{padding: 0}}>
@@ -107,13 +108,12 @@ function Comment(props: CommentProps) {
                             width: "100%",
                             alignItems: "center",
                             justifyContent: "flex-end",  
-                    }}>
+                        }}>
 
                         {/* toggle between clicked and not clicked when the user click the heart icon */}
                         <IconButton title="like" aria-label="add to favorites" 
                             className={"comment-icon-box".concat(props.clicked ? "" : " icon-shake")}
-                            onClick={() => props.likeClicked(props.id, props.like, props.clicked)}
-                        >
+                            onClick={() => props.likeClicked(props.id, props.like, props.clicked)}>
                             {props.clicked 
                                 ? <FavoriteIcon fontSize="small"/>
                                 : <FavoriteBorderIcon fontSize="small" />}

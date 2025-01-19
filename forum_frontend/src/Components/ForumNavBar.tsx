@@ -56,11 +56,14 @@ function ForumNavBar(props: ForumNavBarProps) {
                 }}
                 />
             </form>
+
+            {/* User Avater */}
             <AccountBox 
                 username={props.username}
                 controlMode={props.controlMode}
                 isLight={props.isLight}
                 setCreatePost={props.setCreatePost}
+                setFeedback={props.setFeedback}
                 logOutBut={props.logOutBut}/>
             </div>
         </div>

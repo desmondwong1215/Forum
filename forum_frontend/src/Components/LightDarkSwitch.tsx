@@ -61,11 +61,9 @@ const MaterialUISwitch = styled(Switch)(({ theme }) => ({
 }));
 
 export default function LightDarkSwitch(props: any) {
-  return (
-    <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-        <Typography>Light</Typography>
-        <MaterialUISwitch sx={{m: 1}} onClick={() => props.controlMode()} checked={!props.isLight}/>
-        <Typography>Dark</Typography>
-  </Stack>
-  );
+  return <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+    <Typography>Light</Typography>
+    <MaterialUISwitch sx={{m: 1}} onClick={() => props.controlMode()} checked={!props.isLight}/>
+    <Typography>Dark</Typography>
+  </Stack>;
 }

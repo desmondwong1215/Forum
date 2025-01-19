@@ -117,7 +117,8 @@ function Post(props: PostProps) {
                         setShowEdit={setShowEdit}
                         delete={() => props.deleteItem("post", props.id)}/>
                     }
-                    title={showEdit 
+                    title={
+                        showEdit 
                             ? <TextField id="outlined-basic" variant="outlined" 
                                 onChange={titleOnChange}
                                 label={isTitleError ? "Post Title can't be empty" : "Post Title"}
@@ -125,9 +126,9 @@ function Post(props: PostProps) {
                                 error={isTitleError}
                                 fullWidth
                                 autoFocus/>
-                            : props.title}
-                    subheader={month.concat(" ", props.day, ", ", props.year)}
-                />
+                            : props.title
+                    }
+                    subheader={month.concat(" ", props.day, ", ", props.year)}/>
 
                 {/* card content show the content of the post */}
                 <CardContent>
@@ -153,7 +154,6 @@ function Post(props: PostProps) {
 
                 {/* Delete, edit and report the post */}
                 <CardActions disableSpacing>
-
                     <Stack direction="row" alignItems="center" justifyContent="flex-end" width="100%">
                         {/* the commentId will be 0 if the item is a Post */}
                         <IconButton title="like" aria-label="add to favorites" 
@@ -236,6 +236,7 @@ function Post(props: PostProps) {
                             <ExpandMoreIcon fontSize="large"/>
                         </IconButton>}
                 </Stack>
+                
             </Card>
         </div>
     </Zoom>

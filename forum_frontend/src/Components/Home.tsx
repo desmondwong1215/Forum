@@ -40,7 +40,7 @@ function Home() {
                 <div className="carousel-item" data-bs-interval="10000">
                     <div className="text-container home-container">
                         <p>
-                            <span className="title">Chatterbox</span> is an interactive web forum designed 
+                            <span className="title">ChatterBox</span> is an interactive web forum designed 
                             to foster open discussions and idea sharing among people from diverse backgrounds. 
                             It's a digital space where users can post topics of interest, engage in lively 
                             conversations, and connect with others who share similar interests or viewpoints.
@@ -51,6 +51,7 @@ function Home() {
                         </p>
                     </div>
                 </div>
+                
             </div>
             <button className="carousel-control-next" type="button" data-bs-target="#carouselExampleInterval" data-bs-slide="next">
                 <span className="carousel-control-next-icon" aria-hidden="true"></span>
